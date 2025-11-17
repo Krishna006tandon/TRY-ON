@@ -14,7 +14,7 @@ const Footer = () => {
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
               Your one-stop destination for the latest fashion trends and styles.
             </p>
-            <div className="flex space-x-3">
+            {/* <div className="flex space-x-3">
               <motion.a
                 href="#"
                 whileHover={{ scale: 1.2, y: -3 }}
@@ -47,10 +47,9 @@ const Footer = () => {
               >
                 <FiLinkedin size={18} />
               </motion.a>
-            </div>
+            </div> */}
           </div>
 
-          {/* Quick Links */}
           <div>
             <h3 className="text-lg font-bold mb-6 text-white">Quick Links</h3>
             <ul className="space-y-3 text-sm">
@@ -104,16 +103,16 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-bold mb-6 text-white">Contact</h3>
             <ul className="space-y-3 text-sm text-gray-400">
-              <li className="hover:text-purple-400 transition-colors">Email: support@tryon.com</li>
-              <li className="hover:text-purple-400 transition-colors">Phone: +1 (555) 123-4567</li>
-              <li className="hover:text-purple-400 transition-colors">Address: 123 Fashion St, City</li>
+              <li className="hover:text-purple-400 transition-colors">Email: nexbyte.dev@gmail.com</li>
+              <li className="hover:text-purple-400 transition-colors">Phone: +91 9130866751</li>
+              <li className="hover:text-purple-400 transition-colors">Address: Nagpur(440025), Maharashtra, India</li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-white/10 mt-12 pt-8 text-center">
           <p className="text-gray-400 text-sm">
-            &copy; 2025 <span className="gradient-text font-bold">TRY-ON</span>. All rights reserved.
+            &copy; 2025 <span className="gradient-text font-bold">TRY-ON</span>. All rights reserved. @nexbyte
           </p>
         </div>
       </div>
