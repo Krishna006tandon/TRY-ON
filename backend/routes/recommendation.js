@@ -150,7 +150,7 @@ router.get('/ai', authenticate, async (req, res) => {
       .limit(50)
       .select('name description price category tags ratings');
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const prompt = `
 Based on the user's order history, recommend 5 products they might like.

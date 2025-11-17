@@ -32,21 +32,39 @@ router.post('/:productId/generate', authenticate, isAdmin, async (req, res) => {
     
     generate3DModel(imageUrl, productId)
       .then(async (result) => {
-        product.model3d = {
-          status: 'completed',
-          masterpieceId: result.generationId,
-          url: result.modelUrl
-        };
-        await product.save();
+        try {
+          // Fetch fresh product to avoid stale data
+          const productToUpdate = await Product.findById(productId);
+          if (productToUpdate) {
+            productToUpdate.model3d = {
+              status: 'completed',
+              masterpieceId: result.generationId,
+              url: result.modelUrl
+            };
+            await productToUpdate.save();
+            console.log(`[3D Route] Successfully saved 3D model for product ${productId}`);
+          }
+        } catch (saveError) {
+          console.error('[3D Route] Error saving completed 3D model:', saveError);
+        }
       })
       .catch(async (error) => {
-        console.error('3D Generation Error:', error);
-        product.model3d = {
-          status: 'failed',
-          masterpieceId: null,
-          error: error.message
-        };
-        await product.save();
+        console.error('[3D Route] 3D Generation Error:', error.message);
+        try {
+          // Fetch fresh product to avoid stale data
+          const productToUpdate = await Product.findById(productId);
+          if (productToUpdate) {
+            productToUpdate.model3d = {
+              status: 'failed',
+              masterpieceId: null,
+              error: error.message
+            };
+            await productToUpdate.save();
+            console.log(`[3D Route] Marked 3D generation as failed for product ${productId}`);
+          }
+        } catch (saveError) {
+          console.error('[3D Route] Error saving failed status:', saveError);
+        }
       });
 
     res.json({

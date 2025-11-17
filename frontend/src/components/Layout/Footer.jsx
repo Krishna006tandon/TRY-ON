@@ -1,49 +1,74 @@
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { FiFacebook, FiTwitter, FiInstagram, FiLinkedin } from 'react-icons/fi';
 
 const Footer = () => {
   return (
-    <footer className="bg-dark-surface border-t border-dark-border mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <footer className="relative mt-32 border-t border-white/10">
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent" />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 glass">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* About */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">TRY-ON</h3>
-            <p className="text-dark-muted text-sm">
+            <h3 className="text-2xl font-bold mb-4 gradient-text">TRY-ON</h3>
+            <p className="text-gray-400 text-sm leading-relaxed mb-6">
               Your one-stop destination for the latest fashion trends and styles.
             </p>
-            <div className="flex space-x-4 mt-4">
-              <a href="#" className="text-dark-muted hover:text-white transition-colors">
-                <FiFacebook size={20} />
-              </a>
-              <a href="#" className="text-dark-muted hover:text-white transition-colors">
-                <FiTwitter size={20} />
-              </a>
-              <a href="#" className="text-dark-muted hover:text-white transition-colors">
-                <FiInstagram size={20} />
-              </a>
-              <a href="#" className="text-dark-muted hover:text-white transition-colors">
-                <FiLinkedin size={20} />
-              </a>
+            <div className="flex space-x-3">
+              <motion.a
+                href="#"
+                whileHover={{ scale: 1.2, y: -3 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 glass rounded-full text-gray-400 hover:text-blue-400 transition-colors"
+              >
+                <FiFacebook size={18} />
+              </motion.a>
+              <motion.a
+                href="#"
+                whileHover={{ scale: 1.2, y: -3 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 glass rounded-full text-gray-400 hover:text-blue-400 transition-colors"
+              >
+                <FiTwitter size={18} />
+              </motion.a>
+              <motion.a
+                href="#"
+                whileHover={{ scale: 1.2, y: -3 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 glass rounded-full text-gray-400 hover:text-pink-400 transition-colors"
+              >
+                <FiInstagram size={18} />
+              </motion.a>
+              <motion.a
+                href="#"
+                whileHover={{ scale: 1.2, y: -3 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 glass rounded-full text-gray-400 hover:text-blue-500 transition-colors"
+              >
+                <FiLinkedin size={18} />
+              </motion.a>
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-            <ul className="space-y-2 text-sm">
+            <h3 className="text-lg font-bold mb-6 text-white">Quick Links</h3>
+            <ul className="space-y-3 text-sm">
               <li>
-                <Link to="/products" className="text-dark-muted hover:text-white transition-colors">
+                <Link to="/products" className="text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-2 group">
+                  <span className="w-0 group-hover:w-2 h-0.5 bg-purple-400 transition-all duration-300"></span>
                   Products
                 </Link>
               </li>
               <li>
-                <Link to="/orders" className="text-dark-muted hover:text-white transition-colors">
+                <Link to="/orders" className="text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-2 group">
+                  <span className="w-0 group-hover:w-2 h-0.5 bg-purple-400 transition-all duration-300"></span>
                   Orders
                 </Link>
               </li>
               <li>
-                <Link to="/profile" className="text-dark-muted hover:text-white transition-colors">
+                <Link to="/profile" className="text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-2 group">
+                  <span className="w-0 group-hover:w-2 h-0.5 bg-purple-400 transition-all duration-300"></span>
                   Profile
                 </Link>
               </li>
@@ -52,20 +77,23 @@ const Footer = () => {
 
           {/* Support */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Support</h3>
-            <ul className="space-y-2 text-sm">
+            <h3 className="text-lg font-bold mb-6 text-white">Support</h3>
+            <ul className="space-y-3 text-sm">
               <li>
-                <a href="#" className="text-dark-muted hover:text-white transition-colors">
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-2 group">
+                  <span className="w-0 group-hover:w-2 h-0.5 bg-purple-400 transition-all duration-300"></span>
                   Help Center
                 </a>
               </li>
               <li>
-                <a href="#" className="text-dark-muted hover:text-white transition-colors">
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-2 group">
+                  <span className="w-0 group-hover:w-2 h-0.5 bg-purple-400 transition-all duration-300"></span>
                   Shipping Info
                 </a>
               </li>
               <li>
-                <a href="#" className="text-dark-muted hover:text-white transition-colors">
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-2 group">
+                  <span className="w-0 group-hover:w-2 h-0.5 bg-purple-400 transition-all duration-300"></span>
                   Returns
                 </a>
               </li>
@@ -74,17 +102,19 @@ const Footer = () => {
 
           {/* Contact */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Contact</h3>
-            <ul className="space-y-2 text-sm text-dark-muted">
-              <li>Email: support@tryon.com</li>
-              <li>Phone: +1 (555) 123-4567</li>
-              <li>Address: 123 Fashion St, City</li>
+            <h3 className="text-lg font-bold mb-6 text-white">Contact</h3>
+            <ul className="space-y-3 text-sm text-gray-400">
+              <li className="hover:text-purple-400 transition-colors">Email: support@tryon.com</li>
+              <li className="hover:text-purple-400 transition-colors">Phone: +1 (555) 123-4567</li>
+              <li className="hover:text-purple-400 transition-colors">Address: 123 Fashion St, City</li>
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-dark-border mt-8 pt-8 text-center text-sm text-dark-muted">
-          <p>&copy; 2025 TRY-ON. All rights reserved.</p>
+        <div className="border-t border-white/10 mt-12 pt-8 text-center">
+          <p className="text-gray-400 text-sm">
+            &copy; 2025 <span className="gradient-text font-bold">TRY-ON</span>. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

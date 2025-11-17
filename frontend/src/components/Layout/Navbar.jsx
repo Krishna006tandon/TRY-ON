@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiSearch, FiShoppingCart, FiUser, FiMenu, FiX } from 'react-icons/fi';
+import { FiSearch, FiShoppingCart, FiUser, FiMenu, FiX, FiHeart } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import { useWishlist } from '../../contexts/WishlistContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import AuthModal from '../Auth/AuthModal';
 import ProfileDropdown from '../User/ProfileDropdown';
@@ -13,6 +14,7 @@ import SearchBar from '../Search/SearchBar';
 const Navbar = () => {
   const { user, setShowAuthModal } = useAuth();
   const { getCartItemsCount } = useCart();
+  const { wishlistCount } = useWishlist();
   const { language, changeLanguage } = useTheme();
   const [showSearch, setShowSearch] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -21,17 +23,20 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="sticky top-0 z-40 bg-dark-surface/80 backdrop-blur-md border-b border-dark-border">
+      <nav className="sticky top-0 z-50 glass border-b border-white/10 shadow-lg shadow-purple-500/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/" className="flex items-center space-x-3 group">
               <motion.div
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.1, rotate: [0, -10, 10, -10, 0] }}
                 whileTap={{ scale: 0.95 }}
-                className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent"
+                className="relative"
               >
-                TRY-ON
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity" />
+                <div className="relative text-3xl font-black gradient-text px-4 py-2">
+                  TRY-ON
+                </div>
               </motion.div>
             </Link>
 
@@ -61,22 +66,46 @@ const Navbar = () => {
                 <option value="fr">FR</option>
               </select>
 
+              {/* Wishlist */}
+              {user && (
+                <motion.button
+                  onClick={() => navigate('/wishlist')}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="relative p-3 glass rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30"
+                >
+                  <FiHeart size={22} className="text-red-400" />
+                  {wishlistCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg"
+                    >
+                      {wishlistCount}
+                    </motion.span>
+                  )}
+                </motion.button>
+              )}
+
               {/* Cart */}
-              <button
+              <motion.button
                 onClick={() => navigate('/cart')}
-                className="relative p-2 hover:bg-dark-card rounded-lg transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="relative p-3 glass rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/30"
               >
-                <FiShoppingCart size={20} />
+                <FiShoppingCart size={22} className="text-blue-400" />
                 {getCartItemsCount() > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg"
                   >
                     {getCartItemsCount()}
                   </motion.span>
                 )}
-              </button>
+              </motion.button>
 
               {/* User Menu */}
               {user ? (
@@ -92,12 +121,14 @@ const Navbar = () => {
                   )}
                 </div>
               ) : (
-                <button
+                <motion.button
                   onClick={() => setShowAuthModal(true)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-2.5 btn-premium rounded-full font-semibold text-white shadow-lg shadow-purple-500/30"
                 >
                   Login
-                </button>
+                </motion.button>
               )}
 
               {/* Mobile Menu */}

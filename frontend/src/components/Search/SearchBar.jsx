@@ -59,39 +59,50 @@ const SearchBar = () => {
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <div className="flex items-center bg-dark-card border border-dark-border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search products..."
-          className="flex-1 px-4 py-2 bg-transparent focus:outline-none"
-        />
-        <div className="flex items-center space-x-2 pr-2">
-          <button
+      <motion.div
+        whileFocus={{ scale: 1.02 }}
+        className="flex items-center glass rounded-full overflow-hidden border border-white/10 focus-within:border-purple-500/50 focus-within:shadow-lg focus-within:shadow-purple-500/20 transition-all duration-300"
+      >
+        <div className="flex-1 px-6 py-3">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search products..."
+            className="w-full bg-transparent text-white placeholder-gray-400 focus:outline-none"
+          />
+        </div>
+        <div className="flex items-center space-x-1 pr-2">
+          <motion.button
             type="button"
             onClick={handleVisualSearch}
-            className="p-2 hover:bg-dark-surface rounded transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="p-2.5 glass rounded-full hover:bg-white/10 transition-colors mx-1"
             title="Visual Search"
           >
-            <FiCamera size={18} />
-          </button>
-          <button
+            <FiCamera size={18} className="text-blue-400" />
+          </motion.button>
+          <motion.button
             type="button"
             onClick={handleVoiceSearch}
-            className={`p-2 hover:bg-dark-surface rounded transition-colors ${showVoiceSearch ? 'text-red-500 animate-pulse' : ''}`}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className={`p-2.5 glass rounded-full hover:bg-white/10 transition-colors mx-1 ${showVoiceSearch ? 'text-red-500 animate-pulse bg-red-500/20' : ''}`}
             title="Voice Search"
           >
             <FiMic size={18} />
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="submit"
-            className="p-2 bg-blue-600 hover:bg-blue-700 transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="p-2.5 btn-premium rounded-full mx-1"
           >
             <FiSearch size={18} />
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
     </form>
   );
 };

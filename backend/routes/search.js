@@ -86,7 +86,7 @@ router.post('/visual', upload.single('image'), async (req, res) => {
     }
     
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro-vision' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const prompt = "Describe this product in detail, including its type, color, style, and any distinctive features. Focus on what someone would search for to find a similar product.";
 
       const result = await model.generateContent([prompt, imageData]);
@@ -164,7 +164,7 @@ router.post('/voice', upload.single('audio'), async (req, res) => {
       });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `Extract the main search query from this voice transcription. Return only the key search terms: ${req.body.transcription || 'product search'}`;
 
     const result = await model.generateContent(prompt);

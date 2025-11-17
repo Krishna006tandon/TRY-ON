@@ -53,7 +53,7 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
-    const model = geminiAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = geminiAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // Get user context
     const userOrders = await Order.find({ user: req.user._id })
