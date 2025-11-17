@@ -4,8 +4,9 @@ services:
     name: tryon-backend
     env: node
     plan: free
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -18,10 +19,8 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: tryon-frontend
-          property: url
+        sync: false
+        # Set this manually after frontend is deployed: https://tryon-frontend.onrender.com
       - key: EMAIL_USER
         sync: false
       - key: EMAIL_PASS
@@ -49,20 +48,14 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
 
-  # Frontend Service
-  - type: web
+  # Frontend Service (Static Site)
+  - type: static
     name: tryon-frontend
-    env: node
-    plan: free
-    buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npx vite preview --host 0.0.0.0 --port $PORT
-    staticPublishPath: ./frontend/dist
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: tryon-backend
-          property: url
+        sync: false
+        # Set this manually after backend is deployed: https://tryon-backend.onrender.com
 
