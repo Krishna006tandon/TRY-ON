@@ -1,10 +1,17 @@
 import mongoose from 'mongoose';
 
+const ORDER_NUMBER_PREFIX = process.env.ORDER_NUMBER_PREFIX || 'TRYON';
+
 const orderSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  orderNumber: {
+    type: String,
+    unique: true,
+    index: true
   },
   items: [{
     product: {
@@ -107,6 +114,20 @@ const orderSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+orderSchema.pre('save', function(next) {
+  if (this.isNew && !this.orderNumber) {
+    this.orderNumber = generateOrderNumber();
+  }
+  next();
+});
+
+function generateOrderNumber() {
+  const date = new Date();
+  const datePart = date.toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+  const randomPart = Math.floor(1000 + Math.random() * 9000);
+  return `${ORDER_NUMBER_PREFIX}-${datePart}-${randomPart}`;
+}
 
 export default mongoose.model('Order', orderSchema);
 

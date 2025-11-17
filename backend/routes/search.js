@@ -8,6 +8,9 @@ import axios from 'axios';
 const router = express.Router();
 
 // Initialize Gemini only if API key is available
+const GEMINI_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || 'gemini-2.5-flash';
+const GEMINI_VISION_MODEL = process.env.GEMINI_VISION_MODEL || GEMINI_TEXT_MODEL;
+
 let genAI = null;
 if (process.env.GEMINI_API_KEY) {
   try {
@@ -86,7 +89,7 @@ router.post('/visual', upload.single('image'), async (req, res) => {
     }
     
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: GEMINI_VISION_MODEL });
       const prompt = "Describe this product in detail, including its type, color, style, and any distinctive features. Focus on what someone would search for to find a similar product.";
 
       const result = await model.generateContent([prompt, imageData]);
@@ -164,7 +167,7 @@ router.post('/voice', upload.single('audio'), async (req, res) => {
       });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: GEMINI_TEXT_MODEL });
     const prompt = `Extract the main search query from this voice transcription. Return only the key search terms: ${req.body.transcription || 'product search'}`;
 
     const result = await model.generateContent(prompt);

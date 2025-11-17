@@ -165,5 +165,41 @@ router.post('/validate', async (req, res) => {
   }
 });
 
+// Get available coupons for checkout (requires login)
+router.get('/available', authenticate, async (req, res) => {
+  try {
+    const now = new Date();
+
+    const coupons = await Coupon.find({
+      isActive: true,
+      validFrom: { $lte: now },
+      validUntil: { $gte: now },
+      $or: [
+        { assignedTo: null },
+        { assignedTo: req.user._id }
+      ]
+    })
+      .sort({ validUntil: 1 })
+      .lean();
+
+    const availableCoupons = coupons
+      .filter(coupon => !coupon.usageLimit || coupon.usedCount < coupon.usageLimit)
+      .map(coupon => ({
+        code: coupon.code,
+        description: coupon.description,
+        discountType: coupon.discountType,
+        discountValue: coupon.discountValue,
+        minPurchase: coupon.minPurchase,
+        maxDiscount: coupon.maxDiscount,
+        validUntil: coupon.validUntil,
+        assignedToUser: Boolean(coupon.assignedTo && coupon.assignedTo.toString() === req.user._id.toString())
+      }));
+
+    res.json({ coupons: availableCoupons });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
 

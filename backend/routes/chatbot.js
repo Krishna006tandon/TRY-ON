@@ -5,6 +5,7 @@ import Product from '../models/Product.js';
 import Order from '../models/Order.js';
 
 const router = express.Router();
+const GEMINI_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || 'gemini-2.5-flash';
 
 // Initialize Gemini only if API key is available
 // Use lazy initialization to ensure env vars are loaded
@@ -53,7 +54,7 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
-    const model = geminiAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = geminiAI.getGenerativeModel({ model: GEMINI_TEXT_MODEL });
 
     // Get user context
     const userOrders = await Order.find({ user: req.user._id })

@@ -6,6 +6,7 @@ import { authenticate } from '../middleware/auth.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const router = express.Router();
+const GEMINI_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || 'gemini-2.5-flash';
 
 // Initialize Gemini only if API key is available
 let genAI = null;
@@ -150,7 +151,7 @@ router.get('/ai', authenticate, async (req, res) => {
       .limit(50)
       .select('name description price category tags ratings');
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: GEMINI_TEXT_MODEL });
 
     const prompt = `
 Based on the user's order history, recommend 5 products they might like.

@@ -210,7 +210,8 @@ router.get('/me', authenticate, async (req, res) => {
         role: req.user.role,
         avatar: req.user.avatar,
         rewardPoints: req.user.rewardPoints,
-        preferences: req.user.preferences
+        preferences: req.user.preferences,
+        addresses: req.user.addresses || []
       }
     });
   } catch (error) {

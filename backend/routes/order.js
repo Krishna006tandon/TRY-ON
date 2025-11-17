@@ -107,6 +107,10 @@ router.post('/', authenticate, [
         });
 
         if (coupon) {
+          if (coupon.assignedTo && req.user?._id && coupon.assignedTo.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'This coupon is not available for your account' });
+          }
+
           const now = new Date();
           if (now >= coupon.validFrom && now <= coupon.validUntil) {
             if (!coupon.usageLimit || coupon.usedCount < coupon.usageLimit) {
@@ -208,13 +212,13 @@ router.post('/', authenticate, [
 
     // Create notification
     if (req.user?._id) {
-      await Notification.create({
+    await Notification.create({
         user: req.user._id,
-        title: 'Order Placed',
-        message: `Your order #${order._id} has been placed successfully.`,
+      title: 'Order Placed',
+      message: `Your order #${order.orderNumber || order._id} has been placed successfully.`,
         type: 'order',
-        link: `/orders/${order._id}`,
-        metadata: { orderId: order._id }
+      link: `/orders/${order._id}`,
+      metadata: { orderId: order._id, orderNumber: order.orderNumber }
       });
     }
 
@@ -233,7 +237,7 @@ router.post('/', authenticate, [
       io.to(`user-${req.user._id}`).emit('order-placed', { order });
     }
 
-    res.status(201).json({ order, message: 'Order placed successfully' });
+    res.status(201).json({ order, orderNumber: order.orderNumber, message: 'Order placed successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -297,10 +301,10 @@ router.put('/:id/status', authenticate, [
     await Notification.create({
       user: order.user._id || order.user,
       title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-      message: getStatusMessage(status, order._id, location),
+      message: getStatusMessage(status, order.orderNumber || order._id, location),
       type: 'order',
       link: `/orders/${order._id}`,
-      metadata: { orderId: order._id, status, location }
+      metadata: { orderId: order._id, orderNumber: order.orderNumber, status, location }
     });
 
     // Emit socket event

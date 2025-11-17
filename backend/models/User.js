@@ -40,6 +40,29 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  rewardClaims: [{
+    rewardId: String,
+    title: String,
+    description: String,
+    pointsSpent: Number,
+    rewardValue: Number,
+    rewardType: {
+      type: String,
+      enum: ['coupon', 'discount', 'gift'],
+      default: 'coupon'
+    },
+    code: String,
+    status: {
+      type: String,
+      enum: ['fulfilled', 'pending', 'cancelled'],
+      default: 'fulfilled'
+    },
+    claimedAt: {
+      type: Date,
+      default: Date.now
+    },
+    expiresAt: Date
+  }],
   preferences: {
     theme: {
       type: String,

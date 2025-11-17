@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiMinus, FiPlus, FiTrash2, FiShoppingBag } from 'react-icons/fi';
+import { FiMinus, FiPlus, FiTrash2, FiShoppingBag, FiMapPin } from 'react-icons/fi';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
@@ -11,13 +11,48 @@ import Chatbot from '../components/Chatbot/Chatbot';
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, fetchUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [addressSaving, setAddressSaving] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    type: 'home',
+    street: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'India',
+    isDefault: true
+  });
+
+  const hasAddresses = Boolean(user?.addresses?.length);
+  const defaultAddress = hasAddresses
+    ? user.addresses.find(addr => addr.isDefault) || user.addresses[0]
+    : null;
+  const subtotal = getCartTotal();
+
+  useEffect(() => {
+    const fetchAvailableCoupons = async () => {
+      if (!user) {
+        setAvailableCoupons([]);
+        return;
+      }
+      try {
+        const response = await axios.get('/api/coupons/available');
+        setAvailableCoupons(response.data.coupons || []);
+      } catch (error) {
+        console.error('Error fetching coupons:', error);
+      }
+    };
+
+    fetchAvailableCoupons();
+  }, [user]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -50,6 +85,13 @@ const Cart = () => {
     }
   };
 
+  const handleSelectCoupon = (code) => {
+    if (!code) return;
+    setCouponCode(code);
+    setCouponError('');
+    setAppliedCoupon(null);
+  };
+
   const handleRemoveCoupon = () => {
     setCouponCode('');
     setAppliedCoupon(null);
@@ -67,21 +109,26 @@ const Cart = () => {
       return;
     }
 
+    if (!defaultAddress) {
+      toast.error('Please add a shipping address before checkout');
+      setShowAddressForm(true);
+      return;
+    }
+
     setLoading(true);
     try {
-      const defaultAddress = user.addresses?.find(addr => addr.isDefault) || user.addresses?.[0];
-
       const orderData = {
         items: cartItems.map(item => ({
           product: item.product._id,
           quantity: item.quantity
         })),
-        shippingAddress: defaultAddress || {
-          street: '123 Main St',
-          city: 'City',
-          state: 'State',
-          zipCode: '12345',
-          country: 'Country'
+        shippingAddress: {
+          type: defaultAddress.type || 'home',
+          street: defaultAddress.street,
+          city: defaultAddress.city,
+          state: defaultAddress.state,
+          zipCode: defaultAddress.zipCode,
+          country: defaultAddress.country
         },
         paymentMethod: 'cod',
         couponCode: appliedCoupon?.coupon?.code || null
@@ -99,9 +146,41 @@ const Cart = () => {
   };
 
   const calculateTotal = () => {
-    const subtotal = getCartTotal();
     const discount = appliedCoupon?.discount || 0;
     return Math.max(0, subtotal - discount);
+  };
+
+  const handleSaveAddress = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error('Please login to add an address');
+      return;
+    }
+
+    setAddressSaving(true);
+    try {
+      const payload = {
+        ...addressForm,
+        isDefault: hasAddresses ? addressForm.isDefault : true
+      };
+      await axios.post('/api/user/address', payload);
+      toast.success('Address saved');
+      await fetchUser();
+      setShowAddressForm(false);
+      setAddressForm({
+        type: 'home',
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'India',
+        isDefault: !hasAddresses
+      });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to save address');
+    } finally {
+      setAddressSaving(false);
+    }
   };
 
   return (
@@ -173,9 +252,151 @@ const Cart = () => {
 
             <div className="bg-dark-card p-6 rounded-lg border border-dark-border h-fit">
               <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+
+              <div className="mb-4 p-4 bg-dark-surface border border-dark-border rounded-lg">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-dark-muted mb-2 flex items-center gap-2">
+                      <FiMapPin className="text-blue-400" />
+                      Shipping Address
+                    </p>
+                    {defaultAddress ? (
+                      <div className="space-y-1">
+                        <p className="font-semibold capitalize">{defaultAddress.type || 'home'}</p>
+                        <p className="text-sm text-dark-muted">
+                          {defaultAddress.street}, {defaultAddress.city}
+                        </p>
+                        <p className="text-sm text-dark-muted">
+                          {defaultAddress.state} {defaultAddress.zipCode}, {defaultAddress.country}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-red-400">No shipping address on file.</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setShowAddressForm(!showAddressForm)}
+                    className="text-blue-500 hover:text-blue-400 text-sm font-semibold"
+                  >
+                    {defaultAddress ? 'Change' : 'Add'}
+                  </button>
+                </div>
+              </div>
+
+              {showAddressForm && (
+                <form onSubmit={handleSaveAddress} className="mb-4 space-y-3 bg-dark-surface border border-dark-border rounded-lg p-4">
+                  <div className="grid grid-cols-1 gap-3">
+                    <select
+                      value={addressForm.type}
+                      onChange={(e) => setAddressForm(prev => ({ ...prev, type: e.target.value }))}
+                      className="w-full px-4 py-2 bg-dark-surface border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="home">Home</option>
+                      <option value="work">Work</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Street Address"
+                      value={addressForm.street}
+                      onChange={(e) => setAddressForm(prev => ({ ...prev, street: e.target.value }))}
+                      className="w-full px-4 py-2 bg-dark-surface border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder="City"
+                        value={addressForm.city}
+                        onChange={(e) => setAddressForm(prev => ({ ...prev, city: e.target.value }))}
+                        className="w-full px-4 py-2 bg-dark-surface border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                      <input
+                        type="text"
+                        placeholder="State"
+                        value={addressForm.state}
+                        onChange={(e) => setAddressForm(prev => ({ ...prev, state: e.target.value }))}
+                        className="w-full px-4 py-2 bg-dark-surface border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder="Postal Code"
+                        value={addressForm.zipCode}
+                        onChange={(e) => setAddressForm(prev => ({ ...prev, zipCode: e.target.value }))}
+                        className="w-full px-4 py-2 bg-dark-surface border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                      <input
+                        type="text"
+                        placeholder="Country"
+                        value={addressForm.country}
+                        onChange={(e) => setAddressForm(prev => ({ ...prev, country: e.target.value }))}
+                        className="w-full px-4 py-2 bg-dark-surface border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-dark-muted">
+                    <input
+                      type="checkbox"
+                      checked={addressForm.isDefault || !hasAddresses}
+                      onChange={(e) => setAddressForm(prev => ({ ...prev, isDefault: e.target.checked }))}
+                    />
+                    Set as default shipping address
+                  </label>
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      disabled={addressSaving}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                    >
+                      {addressSaving ? 'Saving...' : 'Save Address'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddressForm(false)}
+                      className="px-4 py-2 border border-dark-border rounded-lg text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
               
               {/* Coupon Section */}
-              <div className="mb-4">
+              <div className="mb-4 space-y-3">
+                {availableCoupons.length > 0 && !appliedCoupon && (
+                  <div>
+                    <label className="text-sm text-dark-muted block mb-1">
+                      Available Coupons
+                    </label>
+                    <select
+                      value=""
+                      onChange={(e) => handleSelectCoupon(e.target.value)}
+                      className="w-full px-4 py-2 bg-dark-surface border border-dark-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">Choose a coupon</option>
+                      {availableCoupons.map((coupon) => {
+                        const eligible = subtotal >= (coupon.minPurchase || 0);
+                        const label = `${coupon.code} • ${coupon.discountType === 'percentage' ? `${coupon.discountValue}% off` : `$${coupon.discountValue} off`}`;
+                        return (
+                          <option
+                            key={coupon.code}
+                            value={coupon.code}
+                            disabled={!eligible}
+                          >
+                            {label} {eligible ? '' : `(min $${coupon.minPurchase})`}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
+
                 {!appliedCoupon ? (
                   <div className="space-y-2">
                     <div className="flex space-x-2">

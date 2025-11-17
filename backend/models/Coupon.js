@@ -47,6 +47,10 @@ const couponSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   userLimit: {
     type: Number,
     default: 1 // How many times a single user can use this coupon

@@ -36,6 +36,194 @@ const getHeaders = () => {
   return headers;
 };
 
+const sanitizeBaseUrl = (url) => url?.replace(/\/$/, '');
+
+const parseCustomPaths = (value) => {
+  if (!value) return [];
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const ensurePlaceholder = (path) => {
+  if (!path) return path;
+  return path.includes('{requestId}') ? path : `${path.replace(/\/$/, '')}/{requestId}`;
+};
+
+const buildUrl = (base, path) => {
+  if (!path) return base;
+  if (path.startsWith('http')) return path.replace(/\/$/, '');
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`.replace(/\/$/, '');
+};
+
+const versionRegex = /\/v\d+$/;
+const pathVersionRegex = /^\/v\d+\//;
+const DEFAULT_IMAGE_CONTENT_TYPE = 'image/jpeg';
+
+const getGenerateEndpoints = () => {
+  const baseUrl = sanitizeBaseUrl(MASTERPIECE_API_URL);
+  const baseWithoutVersion = baseUrl?.replace(versionRegex, '');
+  const customPaths = parseCustomPaths(process.env.MASTERPIECE_GENERATE_PATHS);
+  const defaults = [
+    '/functions/imageto3d',
+    '/v2/functions/imageto3d',
+    '/functions/image-to-3d',
+    '/v2/functions/image-to-3d'
+  ];
+  const paths = [...customPaths, ...defaults];
+  const uniquePaths = [...new Set(paths)];
+  const bases = new Set([baseUrl, baseWithoutVersion].filter(Boolean));
+  const endpoints = new Set();
+
+  bases.forEach((base) => {
+    uniquePaths.forEach((path) => {
+      if (!base) return;
+      const baseHasVersion = versionRegex.test(base);
+      const pathHasVersion = pathVersionRegex.test(path);
+      const targetBase = baseHasVersion && pathHasVersion ? baseWithoutVersion || base : base;
+      endpoints.add(buildUrl(targetBase, path));
+    });
+  });
+
+  return [...endpoints];
+};
+
+const getStatusEndpointPatterns = () => {
+  const baseUrl = sanitizeBaseUrl(MASTERPIECE_API_URL);
+  const baseWithoutVersion = baseUrl?.replace(versionRegex, '');
+  const customPaths = parseCustomPaths(process.env.MASTERPIECE_STATUS_PATHS);
+  const defaults = [
+    '/v2/status/{requestId}',
+    '/status/{requestId}',
+    '/v2/functions/imageto3d/status/{requestId}',
+    '/functions/imageto3d/{requestId}',
+    '/v2/functions/image-to-3d/status/{requestId}',
+    '/functions/image-to-3d/{requestId}',
+    '/v2/requests/{requestId}',
+    '/requests/{requestId}'
+  ];
+  const paths = [...customPaths, ...defaults];
+  const uniquePaths = [...new Set(paths)];
+  const bases = new Set([baseUrl, baseWithoutVersion].filter(Boolean));
+  const patterns = new Set();
+
+  bases.forEach((base) => {
+    uniquePaths.forEach((path) => {
+      if (!base) return;
+      const normalizedPath = ensurePlaceholder(path);
+      const baseHasVersion = versionRegex.test(base);
+      const pathHasVersion = pathVersionRegex.test(normalizedPath);
+      const targetBase = baseHasVersion && pathHasVersion ? baseWithoutVersion || base : base;
+      patterns.add(buildUrl(targetBase, normalizedPath));
+    });
+  });
+
+  return [...patterns];
+};
+
+const getAssetEndpoints = () => {
+  const baseUrl = sanitizeBaseUrl(MASTERPIECE_API_URL);
+  const baseWithoutVersion = baseUrl?.replace(versionRegex, '');
+  const customPaths = parseCustomPaths(process.env.MASTERPIECE_ASSET_PATHS);
+  const defaults = [
+    '/assets/create',
+    '/v2/assets/create'
+  ];
+  const paths = [...customPaths, ...defaults];
+  const uniquePaths = [...new Set(paths)];
+  const bases = new Set([baseUrl, baseWithoutVersion].filter(Boolean));
+  const endpoints = new Set();
+
+  bases.forEach((base) => {
+    uniquePaths.forEach((path) => {
+      if (!base) return;
+      const baseHasVersion = versionRegex.test(base);
+      const pathHasVersion = pathVersionRegex.test(path);
+      const targetBase = baseHasVersion && pathHasVersion ? baseWithoutVersion || base : base;
+      endpoints.add(buildUrl(targetBase, path));
+    });
+  });
+
+  return [...endpoints];
+};
+
+const downloadImageBuffer = async (imageUrl) => {
+  const response = await axios.get(imageUrl, {
+    responseType: 'arraybuffer',
+    timeout: REQUEST_TIMEOUT
+  });
+  const contentType = response.headers['content-type'] || DEFAULT_IMAGE_CONTENT_TYPE;
+  return {
+    buffer: Buffer.from(response.data),
+    contentType,
+    contentLength: response.data?.byteLength || response.data?.length || Buffer.byteLength(response.data),
+    fileName: imageUrl.split('/').pop()?.split('?')[0] || `image-${Date.now()}.jpg`
+  };
+};
+
+const uploadAssetToMasterpiece = async (imageUrl, productId) => {
+  try {
+    const { buffer, contentType, contentLength, fileName } = await downloadImageBuffer(imageUrl);
+    const candidateEndpoints = getAssetEndpoints();
+
+    for (const endpoint of candidateEndpoints) {
+      try {
+        console.log(`[3D Generation] Creating asset via: ${endpoint}`);
+        const assetPayload = {
+          fileName,
+          fileType: contentType,
+          fileSize: contentLength,
+          metadata: {
+            productId,
+            source: 'tryon-platform'
+          }
+        };
+
+        const assetResponse = await axios.post(
+          endpoint,
+          assetPayload,
+          {
+            headers: getHeaders(),
+            timeout: REQUEST_TIMEOUT
+          }
+        );
+
+        const uploadUrl = assetResponse.data?.uploadUrl || assetResponse.data?.url || assetResponse.data?.signedUrl;
+        const requestId = assetResponse.data?.requestId || assetResponse.data?.assetId || assetResponse.data?.data?.requestId;
+
+        if (!uploadUrl || !requestId) {
+          console.warn('[3D Generation] Asset response missing uploadUrl or requestId', assetResponse.data);
+          continue;
+        }
+
+        console.log('[3D Generation] Uploading asset to signed URL');
+        await axios.put(
+          uploadUrl,
+          buffer,
+          {
+            headers: {
+              'Content-Type': contentType || DEFAULT_IMAGE_CONTENT_TYPE,
+              'Content-Length': contentLength
+            },
+            timeout: REQUEST_TIMEOUT
+          }
+        );
+
+        console.log('[3D Generation] Asset uploaded successfully, requestId:', requestId);
+        return requestId;
+      } catch (assetErr) {
+        console.warn(`[3D Generation] Asset endpoint ${endpoint} failed:`, assetErr.response?.status, assetErr.message);
+        continue;
+      }
+    }
+  } catch (downloadErr) {
+    console.warn('[3D Generation] Failed to prepare asset upload:', downloadErr.message);
+  }
+
+  return null;
+};
+
 export const generate3DModel = async (imageUrl, productId) => {
   // Validate configuration first
   validateConfig();
@@ -49,29 +237,68 @@ export const generate3DModel = async (imageUrl, productId) => {
   console.log(`[3D Generation] API URL: ${MASTERPIECE_API_URL}`);
 
   try {
-    // Step 1: Create generation request
-    // Correct endpoint: /v2/functions/imageto3d
-    const endpoint = `${MASTERPIECE_API_URL}/functions/imageto3d`;
-    
-    // Request payload according to Masterpiece X API documentation
+    let imageRequestId = null;
+    const shouldForceAssetUpload = process.env.MASTERPIECE_FORCE_ASSET_UPLOAD === 'true';
+    const tryAssetEnv = process.env.MASTERPIECE_TRY_ASSET_UPLOAD;
+    const shouldTryAssetUploadFirst = shouldForceAssetUpload || (tryAssetEnv ? tryAssetEnv === 'true' : true);
+
+    if (shouldTryAssetUploadFirst) {
+      imageRequestId = await uploadAssetToMasterpiece(imageUrl, productId);
+      if (!imageRequestId && shouldForceAssetUpload) {
+        throw new Error('Asset upload required but failed. Please check Masterpiece asset configuration.');
+      }
+    }
+
+    // Step 1: Create generation request - try multiple endpoints to avoid 404s
     const requestPayload = {
-      imageUrl: imageUrl,
       textureSize: 1024, // Default texture size (can be 256, 512, 1024, 2048)
       seed: 1 // Default seed
     };
 
-    console.log(`[3D Generation] Sending request to: ${endpoint}`);
-    console.log(`[3D Generation] Request payload:`, JSON.stringify(requestPayload, null, 2));
+    if (imageRequestId) {
+      requestPayload.imageRequestId = imageRequestId;
+    } else {
+      requestPayload.imageUrl = imageUrl;
+    }
 
-    const createResponse = await axios.post(
-      endpoint,
-      requestPayload,
-      {
-        headers: getHeaders(),
-        timeout: REQUEST_TIMEOUT
+    const candidateEndpoints = getGenerateEndpoints();
+    let createResponse = null;
+    let createEndpointUsed = null;
+
+    for (const endpoint of candidateEndpoints) {
+      try {
+        console.log(`[3D Generation] Attempting request to: ${endpoint}`);
+        console.log(`[3D Generation] Request payload:`, JSON.stringify(requestPayload, null, 2));
+        const response = await axios.post(
+          endpoint,
+          requestPayload,
+          {
+            headers: getHeaders(),
+            timeout: REQUEST_TIMEOUT
+          }
+        );
+        createResponse = response;
+        createEndpointUsed = endpoint;
+        break;
+      } catch (err) {
+        const status = err.response?.status;
+        console.warn(`[3D Generation] Endpoint ${endpoint} failed with status ${status || 'N/A'} - ${err.message}`);
+        if (status === 404 || status === 405 || status === 400) {
+          continue;
+        }
+        if (!status || status >= 500) {
+          // Retry other endpoints on network/server issues
+          continue;
+        }
+        throw err;
       }
-    );
+    }
 
+    if (!createResponse) {
+      throw new Error('Failed to reach Masterpiece X generation endpoint. Please verify MASTERPIECE_X_API_URL and related settings.');
+    }
+
+    console.log(`[3D Generation] Generation endpoint selected: ${createEndpointUsed}`);
     console.log(`[3D Generation] Create response status: ${createResponse.status}`);
     console.log(`[3D Generation] Create response data:`, JSON.stringify(createResponse.data, null, 2));
 
@@ -92,23 +319,10 @@ export const generate3DModel = async (imageUrl, productId) => {
     // The status endpoint might not be immediately available after creation
     await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
 
-    // Find the correct status endpoint (try once, then cache it)
-    const baseUrl = MASTERPIECE_API_URL.endsWith('/v2') 
-      ? MASTERPIECE_API_URL.replace('/v2', '') 
-      : MASTERPIECE_API_URL.replace(/\/v2\/?$/, '');
-    
-    const statusEndpoints = [
-      `${baseUrl}/v2/status/${requestId}`,                    // Most likely - separate status endpoint
-      `${MASTERPIECE_API_URL}/status/${requestId}`,          // With /v2 in base URL
-      `${baseUrl}/v2/functions/imageto3d/status/${requestId}`, // Status sub-endpoint
-      `${MASTERPIECE_API_URL}/functions/imageto3d/${requestId}`, // Original attempt
-      `${baseUrl}/v2/requests/${requestId}`,                 // Alternative pattern
-      `${MASTERPIECE_API_URL}/requests/${requestId}`         // Alternative with /v2
-    ];
-
-    // Find working status endpoint
-    let workingStatusUrl = null;
-    for (const url of statusEndpoints) {
+    const statusPatterns = getStatusEndpointPatterns();
+    let workingStatusPattern = null;
+    for (const pattern of statusPatterns) {
+      const url = pattern.replace('{requestId}', requestId);
       try {
         console.log(`[3D Generation] Testing status endpoint: ${url}`);
         const testResponse = await axios.get(
@@ -121,7 +335,7 @@ export const generate3DModel = async (imageUrl, productId) => {
         );
         
         if (testResponse.status < 300) {
-          workingStatusUrl = url.replace(`/${requestId}`, '/{requestId}'); // Store pattern
+          workingStatusPattern = pattern;
           console.log(`[3D Generation] Found working status endpoint: ${url}`);
           break;
         }
@@ -139,7 +353,7 @@ export const generate3DModel = async (imageUrl, productId) => {
       }
     }
 
-    if (!workingStatusUrl) {
+    if (!workingStatusPattern) {
       throw new Error('Could not find valid status endpoint. Tried all possible endpoints.');
     }
 
@@ -152,7 +366,7 @@ export const generate3DModel = async (imageUrl, productId) => {
         console.log(`[3D Generation] Polling attempt ${attempts + 1}/${MAX_POLL_ATTEMPTS} for request ${requestId}`);
         
         // Use the working endpoint pattern, replacing {requestId} with actual ID
-        const statusUrl = workingStatusUrl.replace('{requestId}', requestId);
+        const statusUrl = workingStatusPattern.replace('{requestId}', requestId);
         
         const statusResponse = await axios.get(
           statusUrl,
@@ -298,22 +512,11 @@ export const checkGenerationStatus = async (generationId) => {
   try {
     console.log(`[3D Generation] Checking status for generation: ${generationId}`);
     
-    // Try different status endpoint patterns
-    const baseUrl = MASTERPIECE_API_URL.endsWith('/v2') 
-      ? MASTERPIECE_API_URL.replace('/v2', '') 
-      : MASTERPIECE_API_URL.replace(/\/v2\/?$/, '');
-    
-    const statusEndpoints = [
-      `${baseUrl}/v2/status/${generationId}`,
-      `${MASTERPIECE_API_URL}/status/${generationId}`,
-      `${baseUrl}/v2/functions/imageto3d/status/${generationId}`,
-      `${MASTERPIECE_API_URL}/functions/imageto3d/${generationId}`,
-      `${baseUrl}/v2/requests/${generationId}`,
-      `${MASTERPIECE_API_URL}/requests/${generationId}`
-    ];
+    const statusPatterns = getStatusEndpointPatterns();
 
     let response;
-    for (const url of statusEndpoints) {
+    for (const pattern of statusPatterns) {
+      const url = pattern.replace('{requestId}', generationId);
       try {
         response = await axios.get(
           url,
