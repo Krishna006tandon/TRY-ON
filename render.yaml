@@ -1,0 +1,68 @@
+services:
+  # Backend API Service
+  - type: web
+    name: tryon-backend
+    env: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: tryon-frontend
+          property: url
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: MASTERPIECE_X_API_KEY
+        sync: false
+      - key: MASTERPIECE_X_API_URL
+        value: https://api.genai.masterpiecex.com/v2
+      - key: MASTERPIECE_X_APP_ID
+        sync: false
+      - key: ENABLE_3D_GENERATION
+        value: "true"
+      - key: MASTERPIECE_POLL_INTERVAL_MS
+        value: "5000"
+      - key: MASTERPIECE_MAX_POLL_ATTEMPTS
+        value: "240"
+      - key: MASTERPIECE_REQUEST_TIMEOUT_MS
+        value: "30000"
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+  # Frontend Service
+  - type: web
+    name: tryon-frontend
+    env: node
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npx vite preview --host 0.0.0.0 --port $PORT
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: tryon-backend
+          property: url
+
