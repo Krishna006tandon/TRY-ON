@@ -5,21 +5,41 @@ import nodemailer from 'nodemailer';
 let transporter = null;
 let transporterInitialized = false;
 
-function initializeEmailTransporter() {
+async function initializeEmailTransporter() {
   if (transporterInitialized) return transporter; // Already initialized
   
   transporterInitialized = true;
   
   try {
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      transporter = nodemailer.createTransport({
+      // Configure transporter with TLS settings
+      const transporterConfig = {
         service: 'gmail',
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS
         }
-      });
-      console.log('✅ Email transporter initialized');
+      };
+
+      // In development, allow self-signed certificates
+      // In production, use secure defaults unless explicitly configured
+      if (process.env.NODE_ENV === 'development' || process.env.EMAIL_INSECURE === 'true') {
+        transporterConfig.tls = {
+          rejectUnauthorized: false
+        };
+        console.log('⚠️ Email TLS: Using insecure mode (development only)');
+      }
+
+      transporter = nodemailer.createTransport(transporterConfig);
+      
+      // Verify connection (non-blocking, don't fail if verify fails)
+      try {
+        await transporter.verify();
+        console.log('✅ Email transporter initialized and verified');
+      } catch (verifyError) {
+        console.warn('⚠️ Email verification failed, but transporter created:', verifyError.message);
+        console.log('✅ Email transporter initialized (unverified)');
+      }
     } else {
       console.warn('⚠️ Email configuration missing. Email features will be disabled.');
       console.log('   EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'Missing');
@@ -39,7 +59,7 @@ function initializeEmailTransporter() {
 
 export const sendOTPEmail = async (email, otp) => {
   // Initialize if not already done
-  const emailTransporter = initializeEmailTransporter();
+  const emailTransporter = await initializeEmailTransporter();
   
   // Early return if transporter is not available
   if (!emailTransporter || emailTransporter === false) {
@@ -90,7 +110,7 @@ export const sendOTPEmail = async (email, otp) => {
 
 export const sendOrderConfirmation = async (email, order) => {
   // Initialize if not already done
-  const emailTransporter = initializeEmailTransporter();
+  const emailTransporter = await initializeEmailTransporter();
   
   // Check if email is configured
   if (!emailTransporter || emailTransporter === false) {

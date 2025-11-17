@@ -69,6 +69,12 @@ git push -u origin main
 
 ### Step 3: Deploy Frontend
 
+**Option A: Using Blueprint (render.yaml)**
+- If you used Blueprint, frontend service will be created automatically
+- Just add environment variables in Render dashboard
+
+**Option B: Manual Deployment (Recommended for Static Sites)**
+
 1. Click **"New +"** → **"Static Site"**
 2. Connect same GitHub repository
 3. Configure:
@@ -87,6 +93,8 @@ git push -u origin main
 5. Click **"Create Static Site"**
 6. Wait for deployment
 7. **Copy your frontend URL** (e.g., `https://tryon-frontend.onrender.com`)
+
+**Note**: If using Blueprint, frontend will be a Web Service (not Static Site). This works fine too!
 
 ### Step 4: Update Backend FRONTEND_URL
 

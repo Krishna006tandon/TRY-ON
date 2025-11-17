@@ -1,3 +1,6 @@
+# Backend Only - Use this if you want to deploy frontend manually as Static Site
+# Rename this to render.yaml if you prefer manual frontend deployment
+
 services:
   # Backend API Service
   - type: web
@@ -47,19 +50,4 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
-
-  # Frontend Service (Web Service serving static files)
-  - type: web
-    name: tryon-frontend
-    env: node
-    plan: free
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    startCommand: npx vite preview --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: VITE_API_URL
-        sync: false
-        # Set this manually after backend is deployed: https://tryon-backend.onrender.com
 
