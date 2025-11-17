@@ -2,17 +2,8 @@
 // Run: node scripts/createAdmin.js
 
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Load environment variables
-dotenv.config({ path: join(__dirname, '../.env') });
 
 const createAdmin = async () => {
   try {
@@ -29,11 +20,11 @@ const createAdmin = async () => {
     const existingAdmin = await User.findOne({ email: adminEmail });
     
     if (existingAdmin) {
-      // Update existing user to admin
+      // Update existing user to admin and set password
       existingAdmin.role = 'admin';
+      existingAdmin.password = adminPassword; // The pre-save hook in User.js will hash this
       await existingAdmin.save();
       console.log(`✅ Existing user updated to admin: ${adminEmail}`);
-      console.log(`   Password: ${adminPassword}`);
     } else {
       // Create new admin user
       const hashedPassword = await bcrypt.hash(adminPassword, 10);

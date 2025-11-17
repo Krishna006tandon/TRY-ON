@@ -2,6 +2,13 @@ import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
 import { Readable } from 'stream';
 
+// Exit if Cloudinary environment variables are not set
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  console.error('❌ FATAL ERROR: Cloudinary configuration is missing.');
+  console.error('Please ensure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set in your .env file.');
+  process.exit(1);
+}
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,

@@ -1,23 +1,4 @@
-// IMPORTANT: Load environment variables FIRST before any other imports
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Load .env file from backend directory BEFORE any other imports
-const envResult = dotenv.config({ path: join(__dirname, '.env') });
-
-if (envResult.error) {
-  console.warn('⚠️ Warning: Could not load .env file:', envResult.error.message);
-} else {
-  console.log('✅ Environment variables loaded from .env file');
-  // Debug: Show key env vars are loaded
-  console.log('   MONGODB_URI:', process.env.MONGODB_URI ? 'Set' : 'Missing');
-  console.log('   EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'Missing');
-  console.log('   GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'Set' : 'Missing');
-}
+// Environment variables are preloaded by the '-r dotenv/config' flag in package.json scripts
 
 // Now import other modules AFTER env vars are loaded
 import express from 'express';

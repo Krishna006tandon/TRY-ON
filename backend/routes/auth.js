@@ -162,12 +162,14 @@ router.post('/login', [
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      const message = process.env.NODE_ENV === 'development' ? 'User not found' : 'Invalid credentials';
+      return res.status(401).json({ message });
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      const message = process.env.NODE_ENV === 'development' ? 'Incorrect password' : 'Invalid credentials';
+      return res.status(401).json({ message });
     }
 
     if (!user.isEmailVerified) {

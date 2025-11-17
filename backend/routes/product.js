@@ -144,12 +144,6 @@ router.post('/:id/images', authenticate, isAdmin, upload.array('images', 10), as
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    // Check Cloudinary config
-    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-      console.error('Cloudinary configuration missing');
-      return res.status(500).json({ message: 'Image upload service not configured' });
-    }
-
     const uploadPromises = req.files.map(file => 
       uploadToCloudinary(file.buffer, 'tryon/products')
     );
