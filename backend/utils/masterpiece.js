@@ -232,8 +232,15 @@ export const generate3DModel = async (imageUrl, productId) => {
     throw new Error('Image URL is required for 3D model generation');
   }
 
+  // Convert AVIF to JPG, as Masterpiece X API may not support it
+  let processedImageUrl = imageUrl;
+  if (processedImageUrl.endsWith('.avif')) {
+    processedImageUrl = processedImageUrl.replace(/\.avif$/, '.jpg');
+    console.log(`[3D Generation] Converted AVIF image to JPG: ${processedImageUrl}`);
+  }
+
   console.log(`[3D Generation] Starting 3D model generation for product ${productId}`);
-  console.log(`[3D Generation] Image URL: ${imageUrl}`);
+  console.log(`[3D Generation] Image URL: ${processedImageUrl}`);
   console.log(`[3D Generation] API URL: ${MASTERPIECE_API_URL}`);
 
   try {
@@ -243,7 +250,7 @@ export const generate3DModel = async (imageUrl, productId) => {
     const shouldTryAssetUploadFirst = shouldForceAssetUpload || (tryAssetEnv ? tryAssetEnv === 'true' : true);
 
     if (shouldTryAssetUploadFirst) {
-      imageRequestId = await uploadAssetToMasterpiece(imageUrl, productId);
+      imageRequestId = await uploadAssetToMasterpiece(processedImageUrl, productId);
       if (!imageRequestId && shouldForceAssetUpload) {
         throw new Error('Asset upload required but failed. Please check Masterpiece asset configuration.');
       }
@@ -251,14 +258,14 @@ export const generate3DModel = async (imageUrl, productId) => {
 
     // Step 1: Create generation request - try multiple endpoints to avoid 404s
     const requestPayload = {
-      textureSize: 1024, // Default texture size (can be 256, 512, 1024, 2048)
+      textureSize: 2048, // Use highest available texture size for better quality
       seed: 1 // Default seed
     };
 
     if (imageRequestId) {
       requestPayload.imageRequestId = imageRequestId;
     } else {
-      requestPayload.imageUrl = imageUrl;
+      requestPayload.imageUrl = processedImageUrl;
     }
 
     const candidateEndpoints = getGenerateEndpoints();

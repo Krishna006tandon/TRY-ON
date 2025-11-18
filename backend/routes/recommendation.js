@@ -90,7 +90,7 @@ router.get('/personalized', async (req, res) => {
       recommendedProducts = await Product.find({
         category: { $in: Array.from(categories) },
         isActive: true,
-        _id: { $nin: userOrders.flatMap(o => o.items.map(i => i.product._id)) }
+        _id: { $nin: userOrders.flatMap(o => o.items.filter(i => i.product).map(i => i.product._id)) }
       })
         .populate('category', 'name slug')
         .limit(10)

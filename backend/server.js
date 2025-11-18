@@ -38,6 +38,7 @@ import recommendationRoutes from './routes/recommendation.js';
 import product3dRoutes from './routes/product3d.js';
 import couponRoutes from './routes/coupon.js';
 import wishlistRoutes from './routes/wishlist.js';
+import tryonRoutes from './routes/tryon.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
@@ -52,6 +53,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/try-on', tryonRoutes);
 
 // Socket.io for real-time features
 io.on('connection', (socket) => {

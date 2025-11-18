@@ -9,6 +9,7 @@ import CartDrawer from '../components/Cart/CartDrawer';
 import Chatbot from '../components/Chatbot/Chatbot';
 import Model3DViewer from '../components/Product/Model3DViewer';
 import WishlistButton from '../components/Product/WishlistButton';
+import TryOnModal from '../components/TryOn/TryOnModal'; // Import the new modal
 import toast from 'react-hot-toast';
 
 const ProductDetails = () => {
@@ -21,6 +22,7 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [show3DModel, setShow3DModel] = useState(false);
+  const [showTryOnModal, setShowTryOnModal] = useState(false); // State for the new modal
 
   useEffect(() => {
     fetchProduct();
@@ -130,25 +132,37 @@ const ProductDetails = () => {
                 </div>
               </div>
             )}
-            {product.model3d?.status === 'completed' && (
+            <div className="mt-6 space-y-4">
+              {product.model3d?.status === 'completed' && (
+                <motion.button
+                  onClick={() => setShow3DModel(true)}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full btn-premium py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-2 shadow-lg shadow-purple-500/30"
+                >
+                  <span className="text-2xl">🎮</span>
+                  <span>View 3D Model</span>
+                </motion.button>
+              )}
+              {product.model3d?.status === 'processing' && (
+                <div className="w-full glass border border-yellow-500/30 py-4 rounded-xl text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-yellow-400 font-medium">3D Model is being generated...</p>
+                  </div>
+                </div>
+              )}
+              {/* Virtual Try-On Button */}
               <motion.button
-                onClick={() => setShow3DModel(true)}
+                onClick={() => setShowTryOnModal(true)}
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                className="mt-6 w-full btn-premium py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-2 shadow-lg shadow-purple-500/30"
+                className="w-full bg-gradient-to-r from-pink-500 to-orange-500 py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30"
               >
-                <span className="text-2xl">🎮</span>
-                <span>View 3D Model</span>
+                <span className="text-2xl">📸</span>
+                <span>Virtual Try-On</span>
               </motion.button>
-            )}
-            {product.model3d?.status === 'processing' && (
-              <div className="mt-6 w-full glass border border-yellow-500/30 py-4 rounded-xl text-center">
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="text-yellow-400 font-medium">3D Model is being generated...</p>
-                </div>
-              </div>
-            )}
+            </div>
           </motion.div>
 
           {/* Details */}
@@ -241,6 +255,13 @@ const ProductDetails = () => {
         <Model3DViewer
           productId={product._id}
           onClose={() => setShow3DModel(false)}
+        />
+      )}
+
+      {showTryOnModal && (
+        <TryOnModal
+          product={product}
+          onClose={() => setShowTryOnModal(false)}
         />
       )}
 
